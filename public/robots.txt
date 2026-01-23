@@ -1,0 +1,12 @@
+# robots.txt for Markdown to PDF Converter
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://markdowntopdf.com/sitemap.xml
+
+# Block common bot traps
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
