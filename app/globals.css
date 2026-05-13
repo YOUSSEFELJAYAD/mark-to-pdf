@@ -278,3 +278,53 @@
 .dark .prose a {
   color: oklch(0.696 0.17 162.48);
 }
+
+/* Theme variants for Markdown preview */
+.prose.prose-github {
+  /* baseline already matches GitHub aesthetic */
+}
+
+.prose.prose-academic {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+
+.prose.prose-academic h1,
+.prose.prose-academic h2,
+.prose.prose-academic h3 {
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.prose.prose-academic p {
+  text-indent: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose.prose-academic p:first-of-type,
+.prose.prose-academic h1 + p,
+.prose.prose-academic h2 + p,
+.prose.prose-academic h3 + p {
+  text-indent: 0;
+}
+
+.prose.prose-minimal {
+  font-family: var(--font-sans, system-ui), sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.9;
+}
+
+.prose.prose-minimal code {
+  background-color: transparent;
+  border: 1px solid var(--border);
+}
+
+.prose.prose-minimal pre {
+  background-color: transparent;
+  border: 1px solid var(--border);
+}
+
+.prose.prose-minimal hr {
+  border-top: 1px dashed var(--border);
+}
