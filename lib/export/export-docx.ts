@@ -13,9 +13,15 @@ import {
   TableCell,
   WidthType,
   BorderStyle,
-} from 'docx'
-import { saveAs } from 'file-saver'
-import { marked } from 'marked'
+  TableOfContents,
+  Footer,
+  PageNumber,
+  PageOrientation,
+} from "docx"
+import { saveAs } from "file-saver"
+import { marked } from "marked"
+import { DEFAULT_SETTINGS, MARGIN_MM, type ExportSettings } from "./themes"
+import { extractTocEntries } from "./toc"
 
 type DocxChild = Paragraph | Table
 
@@ -34,23 +40,106 @@ interface MarkdownToken {
   cells?: MarkdownToken[]
 }
 
+function pageSizeToTwip(size: ExportSettings["pageSize"]) {
+  const dims =
+    size === "A4"
+      ? { width: 210, height: 297 }
+      : size === "Letter"
+        ? { width: 215.9, height: 279.4 }
+        : { width: 215.9, height: 355.6 }
+  return {
+    width: Math.round(dims.width * 56.6929),
+    height: Math.round(dims.height * 56.6929),
+    orientation: PageOrientation.PORTRAIT,
+  }
+}
+
+function marginToTwip(mm: number): number {
+  return Math.round(mm * 56.6929)
+}
+
 export async function exportToDocx(
   markdown: string,
-  filename: string = 'document.docx'
+  filename: string = "document.docx",
+  settings: ExportSettings = DEFAULT_SETTINGS,
 ): Promise<void> {
   const tokens = marked.lexer(markdown)
-  const children: DocxChild[] = []
+  const bodyChildren: DocxChild[] = []
+
+  if (settings.coverPage) {
+    const h1 = tokens.find(
+      (t) => (t as MarkdownToken).type === "heading" && (t as MarkdownToken).depth === 1,
+    ) as MarkdownToken | undefined
+    const title = h1?.text || "Document"
+    bodyChildren.push(
+      new Paragraph({
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: title, bold: true, size: 72 })],
+        spacing: { before: 4000, after: 200 },
+      }),
+    )
+  }
+
+  if (settings.toc !== "off") {
+    const tocEntries = extractTocEntries(markdown, settings.toc)
+    if (tocEntries.length > 0) {
+      bodyChildren.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: "Contents", bold: true })],
+        }),
+      )
+      bodyChildren.push(
+        new TableOfContents("Table of Contents", {
+          hyperlink: true,
+          headingStyleRange: settings.toc === "h1-h2" ? "1-2" : "1-3",
+        }),
+      )
+    }
+  }
 
   for (const token of tokens) {
     const elements = tokenToDocxElements(token as MarkdownToken)
-    children.push(...elements)
+    bodyChildren.push(...elements)
   }
+
+  const marginMm = MARGIN_MM[settings.margin]
+  const sectionProps = {
+    page: {
+      size: pageSizeToTwip(settings.pageSize),
+      margin: {
+        top: marginToTwip(marginMm),
+        right: marginToTwip(marginMm),
+        bottom: marginToTwip(marginMm),
+        left: marginToTwip(marginMm),
+      },
+    },
+  }
+
+  const footers =
+    settings.pageNumbers !== "off"
+      ? {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment:
+                  settings.pageNumbers === "footer-right"
+                    ? AlignmentType.RIGHT
+                    : AlignmentType.CENTER,
+                children: [new TextRun({ children: [PageNumber.CURRENT] })],
+              }),
+            ],
+          }),
+        }
+      : undefined
 
   const doc = new Document({
     sections: [
       {
-        properties: {},
-        children,
+        properties: sectionProps,
+        children: bodyChildren,
+        ...(footers ? { footers } : {}),
       },
     ],
   })
