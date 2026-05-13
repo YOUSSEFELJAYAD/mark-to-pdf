@@ -392,13 +392,15 @@ export function useDocument(options: UseDocumentOptions = {}) {
   const [hydrated, setHydrated] = React.useState(false)
 
   const stateRef = React.useRef({ markdown, filename, isUserEditedFilename })
-  stateRef.current = { markdown, filename, isUserEditedFilename }
-
   const onRestoredRef = React.useRef(options.onRestored)
-  onRestoredRef.current = options.onRestored
-
   const debounceRef = React.useRef<number | null>(null)
   const savedTimerRef = React.useRef<number | null>(null)
+
+  // Sync refs in an effect (React 19 / react-hooks/refs forbids ref writes during render)
+  React.useEffect(() => {
+    stateRef.current = { markdown, filename, isUserEditedFilename }
+    onRestoredRef.current = options.onRestored
+  })
 
   React.useEffect(() => {
     const stored = read<PersistedDoc>(STORAGE_KEYS.currentDoc)
@@ -821,9 +823,13 @@ export const MarkdownEditor = React.forwardRef<EditorHandle, Props>(function Mar
   const containerRef = React.useRef<HTMLDivElement>(null)
   const viewRef = React.useRef<EditorView | null>(null)
   const onChangeRef = React.useRef(onChange)
-  onChangeRef.current = onChange
   const onPasteRef = React.useRef(onPaste)
-  onPasteRef.current = onPaste
+
+  // Sync callback refs in an effect (react-hooks/refs forbids ref writes during render)
+  React.useEffect(() => {
+    onChangeRef.current = onChange
+    onPasteRef.current = onPaste
+  })
   const themeCompartment = React.useRef(new Compartment())
 
   React.useImperativeHandle(
