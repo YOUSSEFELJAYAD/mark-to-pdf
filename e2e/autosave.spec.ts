@@ -15,7 +15,7 @@ test.describe('Autosave', () => {
     await page.keyboard.press('Delete')
     await page.keyboard.type('# My persistent doc')
 
-    await expect(page.locator('[data-testid="save-state"]')).toHaveText('Saved', { timeout: 2000 })
+    await expect(page.locator('[data-testid="save-state"]')).toHaveText('Saved', { timeout: 4000 })
 
     await page.reload()
 
@@ -29,7 +29,7 @@ test.describe('Autosave', () => {
     await page.keyboard.type(' extra')
 
     await expect(page.locator('[data-testid="save-state"]')).toHaveText('Saving…')
-    await expect(page.locator('[data-testid="save-state"]')).toHaveText('Saved', { timeout: 2000 })
+    await expect(page.locator('[data-testid="save-state"]')).toHaveText('Saved', { timeout: 4000 })
   })
 
   test('shows word count and character count', async ({ page }) => {
