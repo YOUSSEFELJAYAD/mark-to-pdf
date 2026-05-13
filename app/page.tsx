@@ -5,8 +5,16 @@ import { SiteFooter } from "@/components/seo/site-footer"
 import { SoftwareAppJsonLd } from "@/components/structured-data/base-jsonld"
 import { FaqJsonLd, FaqVisible } from "@/components/structured-data/faq-jsonld"
 import { HowToJsonLd } from "@/components/structured-data/howto-jsonld"
+import { getExampleBySlug } from "@/lib/seo/examples"
 
-export default function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ example?: string }>
+}) {
+  const { example } = await searchParams
+  const initialExample = example ? getExampleBySlug(example) : null
+
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <SoftwareAppJsonLd />
@@ -38,7 +46,7 @@ export default function Page() {
         <div className="flex flex-col xl:flex-row gap-6">
           {/* Converter */}
           <div className="flex-1">
-            <MarkdownConverter />
+            <MarkdownConverter initialExample={initialExample?.markdown ?? null} />
           </div>
 
           {/* Sidebar Ad - Hidden on mobile/tablet */}

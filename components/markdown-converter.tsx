@@ -49,14 +49,18 @@ import { MarkdownEditor, type EditorHandle } from "@/components/editor/markdown-
 import { EditorToolbar } from "@/components/editor/editor-toolbar"
 import { EditorStatusbar } from "@/components/editor/editor-statusbar"
 import { MarkdownPreview } from "@/components/preview/markdown-preview"
-import { useDocument } from "@/hooks/use-document"
+import { useDocument, SAMPLE_MARKDOWN } from "@/hooks/use-document"
 import { useExportSettings } from "@/hooks/use-export-settings"
 import { ExportSettingsDialog } from "@/components/export/export-settings-dialog"
 
 type ExportFormat = "pdf" | "docx"
 type ViewMode = "split" | "edit" | "preview"
 
-export function MarkdownConverter() {
+interface MarkdownConverterProps {
+  initialExample?: string | null
+}
+
+export function MarkdownConverter({ initialExample = null }: MarkdownConverterProps) {
   const {
     markdown,
     setMarkdown,
@@ -98,6 +102,15 @@ export function MarkdownConverter() {
       setFilename(inferredFilename, "system")
     }
   }, [inferredFilename, isUserEditedFilename, filename, setFilename])
+
+  const exampleAppliedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (exampleAppliedRef.current) return
+    if (!initialExample) return
+    if (markdown !== SAMPLE_MARKDOWN) return
+    setMarkdown(initialExample)
+    exampleAppliedRef.current = true
+  }, [initialExample, markdown, setMarkdown])
 
   const loadDocument = React.useCallback(
     (incoming: { markdown: string; filename: string | null }) => {

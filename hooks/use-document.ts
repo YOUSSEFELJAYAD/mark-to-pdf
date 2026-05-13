@@ -3,7 +3,7 @@
 import * as React from "react"
 import { read, write, STORAGE_KEYS } from "@/lib/storage"
 
-const SAMPLE_MARKDOWN = `# Welcome to Markdown Converter
+export const SAMPLE_MARKDOWN = `# Welcome to Markdown Converter
 
 This is a **powerful** tool to convert your Markdown to PDF or DOCX.
 
