@@ -1176,14 +1176,13 @@ export function MarkdownPreview({ html, theme = "github", innerRef }: Props) {
         "prose prose-sm dark:prose-invert max-w-none h-full overflow-auto rounded-lg border bg-background p-3 md:p-4",
         themeClass,
       )}
-      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
 }
 ```
 
-> **Security note:** the HTML passed in is the output of `markdownToHtml()` from `lib/markdown-parser.ts`, which routes through DOMPurify. The `eslint-disable` is targeted; it's not a global suppression. If the project's lint config blocks `react/no-danger` entirely, add a per-file exception in `.eslintrc` rather than disabling here.
+> **Security note:** the HTML passed in is the output of `markdownToHtml()` from `lib/markdown-parser.ts`, which routes through DOMPurify. The project's lint config does not enable `react/no-danger`, so no disable directive is needed.
 
 - [ ] **Step 2: Typecheck + lint**
 
