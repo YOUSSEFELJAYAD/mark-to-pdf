@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { BreadcrumbJsonLd } from "@/components/structured-data/breadcrumb-jsonld"
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-12 prose prose-sm">
+      <BreadcrumbJsonLd items={[{ name: "Home", href: "/" }, { name: "Terms", href: "/terms" }]} />
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:underline">Home</Link>
         <span className="mx-2">/</span>
