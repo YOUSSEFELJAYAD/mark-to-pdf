@@ -3,7 +3,7 @@ import Link from "next/link"
 export function SiteFooter() {
   return (
     <footer className="border-t">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 md:px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} Markdown to PDF Converter. Free online tool.

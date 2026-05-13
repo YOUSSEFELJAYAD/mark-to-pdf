@@ -18,15 +18,15 @@ export default async function AppleIcon() {
         }}
       >
         <svg
-          width={113}
+          width={108}
           height={90}
-          viewBox="0 0 40 32"
+          viewBox="0 0 40 40"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M4 28 V4 L20 22 L36 4 V28"
+            d="M8 30 V10 L20 24 L32 10 V30"
             stroke="white"
-            strokeWidth="4"
+            strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
