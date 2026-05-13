@@ -258,23 +258,17 @@ test.describe('Markdown Converter', () => {
     })
 
     test('should show loading state during export', async ({ page }) => {
-      // Click export button
       await page.getByRole('button', { name: /Export/i }).first().click()
-
-      // Should show exporting state briefly
       await expect(
-        page.getByRole('button', { name: /Exporting/i }).or(page.getByRole('button', { name: /Downloaded/i }))
+        page.getByRole('button', { name: /Generating PDF/i }).or(page.locator('text=Downloaded').first())
       ).toBeVisible({ timeout: 5000 })
     })
 
     test('should show success state after export', async ({ page }) => {
-      // Wait for download
       const downloadPromise = page.waitForEvent('download')
       await page.getByRole('button', { name: /Export/i }).first().click()
       await downloadPromise
-
-      // Should show success state
-      await expect(page.getByRole('button', { name: /Downloaded/i })).toBeVisible()
+      await expect(page.locator('text=Downloaded').first()).toBeVisible({ timeout: 5000 })
     })
   })
 

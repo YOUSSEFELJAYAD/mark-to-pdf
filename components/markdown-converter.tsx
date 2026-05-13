@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { FileText, Download, Eye, Code, FileIcon, Loader2 } from "lucide-react"
 import { Upload, History, Trash2, FileText as FileTextIcon } from "lucide-react"
 import { Settings as SettingsIcon } from "lucide-react"
@@ -69,7 +70,6 @@ export function MarkdownConverter() {
   const [format, setFormat] = React.useState<ExportFormat>("pdf")
   const [viewMode, setViewMode] = React.useState<ViewMode>("split")
   const [isExporting, setIsExporting] = React.useState(false)
-  const [exportStatus, setExportStatus] = React.useState<"idle" | "success" | "error">("idle")
   const editorRef = React.useRef<EditorHandle>(null)
   const previewRef = React.useRef<HTMLDivElement>(null)
 
@@ -112,9 +112,9 @@ export function MarkdownConverter() {
   const handleFileSelected = React.useCallback(async (file: File) => {
     if (!isAcceptedFile(file)) {
       if (file.size > MAX_FILE_BYTES) {
-        window.alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Limit is 5 MB.`)
+        toast.error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Limit is 5 MB.`)
       } else {
-        window.alert(`Only ${ACCEPTED_EXTENSIONS.join(", ")} files are supported.`)
+        toast.error(`Only ${ACCEPTED_EXTENSIONS.join(", ")} files are supported.`)
       }
       return
     }
@@ -124,7 +124,9 @@ export function MarkdownConverter() {
 
   const confirmPendingFile = () => {
     if (!pendingFile) return
+    const size = new Blob([pendingFile.text]).size
     loadDocument({ markdown: pendingFile.text, filename: pendingFile.name })
+    toast.success(`Loaded ${pendingFile.name} (${(size / 1024).toFixed(1)} KB)`)
     setPendingFile(null)
   }
   const cancelPendingFile = () => setPendingFile(null)
@@ -169,7 +171,7 @@ export function MarkdownConverter() {
     if (!file) return false
     if (file.size > 1_000_000) {
       event.preventDefault()
-      window.alert(`Image too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Limit is 1 MB.`)
+      toast.error(`Image too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Limit is 1 MB.`)
       return true
     }
 
@@ -206,20 +208,26 @@ export function MarkdownConverter() {
   const handleExport = async () => {
     if (!markdown.trim()) return
     setIsExporting(true)
-    setExportStatus("idle")
     try {
       const exportFilename = filename.trim() || "document"
+      const fullName =
+        format === "pdf" ? `${exportFilename}.pdf` : `${exportFilename}.docx`
+
       if (format === "pdf") {
-        await exportHtmlToPdf(html, `${exportFilename}.pdf`, exportSettings)
+        await exportHtmlToPdf(html, fullName, exportSettings)
       } else {
-        await exportToDocx(markdown, `${exportFilename}.docx`, exportSettings)
+        await exportToDocx(markdown, fullName, exportSettings)
       }
-      setExportStatus("success")
-      setTimeout(() => setExportStatus("idle"), 3000)
+      toast.success(`Downloaded ${fullName}`)
     } catch (error) {
       console.error("Export failed:", error)
-      setExportStatus("error")
-      setTimeout(() => setExportStatus("idle"), 3000)
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error(`Export failed: ${message}`, {
+        action: {
+          label: "Retry",
+          onClick: () => void handleExport(),
+        },
+      })
     } finally {
       setIsExporting(false)
     }
@@ -293,23 +301,12 @@ export function MarkdownConverter() {
               </SelectContent>
             </Select>
 
-            <Button
-              onClick={handleExport}
-              disabled={isExporting || !markdown.trim()}
-              className={cn(
-                exportStatus === "success" && "bg-green-600 hover:bg-green-700",
-                exportStatus === "error" && "bg-red-600 hover:bg-red-700",
-              )}
-            >
+            <Button onClick={handleExport} disabled={isExporting || !markdown.trim()}>
               {isExporting ? (
                 <>
                   <Loader2 data-icon="inline-start" className="size-4 animate-spin" />
-                  Exporting...
+                  {format === "pdf" ? "Generating PDF…" : "Generating DOCX…"}
                 </>
-              ) : exportStatus === "success" ? (
-                "Downloaded!"
-              ) : exportStatus === "error" ? (
-                "Failed - Try Again"
               ) : (
                 <>
                   <Download data-icon="inline-start" className="size-4" />
