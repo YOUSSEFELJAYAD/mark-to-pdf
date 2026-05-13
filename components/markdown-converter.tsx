@@ -65,7 +65,11 @@ export function MarkdownConverter() {
     isUserEditedFilename,
     resetUserEditedFilename,
     saveState,
-  } = useDocument()
+  } = useDocument({
+    onRestored: ({ filename }) => {
+      toast.info(`Restored your last document (${filename})`, { duration: 3000 })
+    },
+  })
 
   const [format, setFormat] = React.useState<ExportFormat>("pdf")
   const [viewMode, setViewMode] = React.useState<ViewMode>("split")
