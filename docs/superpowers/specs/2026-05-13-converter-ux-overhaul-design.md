@@ -2,7 +2,19 @@
 
 **Date:** 2026-05-13
 **Status:** Approved, pending implementation plan
-**Scope:** `app/page.tsx`, `components/markdown-converter.tsx`, `lib/export-pdf.ts`, `lib/export-docx.ts`, `lib/markdown-parser.ts`
+**Scope:**
+- `app/page.tsx` (mount Toaster, sidebar adjustments unchanged)
+- `app/layout.tsx` (mount Toaster)
+- `app/globals.css` (add `.prose-github`, `.prose-academic`, `.prose-minimal` theme variants)
+- `components/markdown-converter.tsx` (slim down to orchestrator)
+- `lib/export-pdf.ts` → **move to** `lib/export/export-pdf.ts`, refactor to accept `ExportSettings`
+- `lib/export-docx.ts` → **move to** `lib/export/export-docx.ts`, refactor to accept `ExportSettings`
+- `lib/markdown-parser.ts` (unchanged surface; consumed by export + preview)
+- New: `lib/storage.ts`, `lib/editor/*`, `lib/export/themes.ts`, `lib/export/toc.ts`
+- New: `components/editor/*`, `components/export/*`, `components/preview/markdown-preview.tsx`
+- New: `hooks/use-document.ts`, `hooks/use-recent-docs.ts`, `hooks/use-export-settings.ts`
+
+All callsites of moved modules (today only `components/markdown-converter.tsx`) must be updated. No re-export shims — clean rename.
 
 ## Goal
 
@@ -82,7 +94,12 @@ lib/
 
 ### Hooks
 
-- `useDocument()` returns `{ markdown, setMarkdown, filename, setFilename, saveState }`. Reads on mount, debounces writes 500ms, exposes `saveState: 'idle' | 'saving' | 'saved'`.
+- `useDocument()` returns `{ markdown, setMarkdown, filename, setFilename, isUserEditedFilename, saveState, flushNow }`.
+  - Reads `mark-to-pdf:doc:current` on mount; falls back to `SAMPLE_MARKDOWN`.
+  - Debounces writes 500ms.
+  - `isUserEditedFilename: boolean` — flips to `true` the first time `setFilename` is called from a user input change. Stays `false` if filename was set by inference. Used by filename-inference logic to know when not to overwrite.
+  - `saveState: 'idle' | 'saving' | 'saved'`.
+  - `flushNow()` — synchronously writes pending state. Wired to a `beforeunload` listener so we never lose work to a tab close inside the debounce window.
 - `useRecentDocs()` returns `{ recent: RecentDoc[], push(doc), remove(id), clear() }`. Capped at 5, dedupes by content hash.
 - `useExportSettings()` returns `{ settings, update(partial), reset() }`. Persists on every change.
 
@@ -96,6 +113,8 @@ type Margin = 'narrow' | 'normal' | 'wide'      // 10 / 20 / 30 mm
 type ThemeId = 'github' | 'academic' | 'minimal'
 type FontFamily = 'sans' | 'serif' | 'mono'
 type TocDepth = 'off' | 'h1-h2' | 'h1-h3'
+// Cap at h3 intentionally — deeper TOCs become noise in the output and the
+// dialog stays a clean radio group. Deeper depth is a deferred enhancement.
 type PageNumbers = 'off' | 'footer-center' | 'footer-right'
 
 interface ExportSettings {
@@ -103,7 +122,7 @@ interface ExportSettings {
   margin: Margin
   theme: ThemeId
   bodyFont: FontFamily
-  headingFont: FontFamily | 'match'
+  headingFont: FontFamily | 'match'   // 'match' = use bodyFont verbatim
   toc: TocDepth
   pageNumbers: PageNumbers
   coverPage: boolean
@@ -178,10 +197,12 @@ Behavior:
 | Cmd/Ctrl+K | insertLink |
 | Cmd/Ctrl+E | toggleInlineCode |
 | Cmd/Ctrl+Shift+K | insertCodeBlock |
-| Cmd/Ctrl+1..6 | setHeading(1..6) |
+| Alt+1..6 | setHeading(1..6) |
 | Cmd/Ctrl+Shift+. | toggleBlockquote |
-| Cmd/Ctrl+Shift+8 | toggleUnorderedList |
-| Cmd/Ctrl+Shift+7 | toggleOrderedList |
+| Cmd/Ctrl+Shift+U | toggleUnorderedList |
+| Cmd/Ctrl+Shift+O | toggleOrderedList |
+
+Shortcuts are registered as CodeMirror keymap entries that return `true` from their handler, which prevents propagation to the browser. Cmd/Ctrl+K is the only one that overlaps a common browser shortcut (focus address bar in some browsers); the keymap stops propagation when the editor has focus only — outside the editor, browser shortcuts work normally. Heading shortcuts use `Alt+1..6` rather than `Cmd/Ctrl+1..6` to avoid the universal browser tab-switching binding.
 
 ### Autosave
 
@@ -212,7 +233,7 @@ In toolbar (Upload icon). Triggers hidden `<input type="file" accept=".md,.markd
 
 ### Filename inference
 
-When markdown changes, derive `inferredFilename` from first H1 (slugified, max 60 chars). If user has not manually edited the filename (`filename === 'document'` or last-typed by user matches inferred from a prior parse), update it. Otherwise leave it alone. Tracked by an `isUserEdited` flag on filename input.
+When markdown changes, derive `inferredFilename` from first H1 (slugified, max 60 chars). Update `filename` to the inferred value **only if `isUserEditedFilename === false`** (from `useDocument`). Once the user types into the filename input, `isUserEditedFilename` flips to `true` and inference is disabled for the remainder of the session — even if the user clears the input back to empty. Reset only happens on "New document" action or on loading a different file (which also reassigns the filename to that file's basename and clears the flag).
 
 ### Image paste
 
@@ -225,10 +246,15 @@ When markdown changes, derive `inferredFilename` from first H1 (slugified, max 6
 
 ### Recent docs
 
-`useRecentDocs` maintains `mark-to-pdf:doc:recent` (max 5). Push triggers on:
+`useRecentDocs` maintains `mark-to-pdf:doc:recent` (max 5). The **current** (about-to-be-replaced) document is pushed to recents whenever the editor's contents are replaced by an external source. Triggers:
 
-- Replacing current doc via drop/upload/recent
-- Manual "Save as recent" action (toolbar overflow menu)
+- Drop or upload of a file (push the current doc, then load the file)
+- Loading a doc from the recent menu (push the current doc, then load the selected recent)
+- Manual "Save as recent" toolbar action (push current doc, no replace)
+
+The doc being **loaded** never gets pushed to recents — only the one being displaced. Deduped by content hash; loading a recent that equals the current is a no-op.
+
+**Image bloat cap:** Each `RecentDoc.markdown` is capped at 1 MB serialized. If the current doc exceeds that (typically due to many pasted base64 images), the recent push is skipped silently — recents are a convenience, not a backup.
 
 Recent docs dropdown (toolbar) shows: title, relative time ("2 min ago"). Item actions: Load · Delete. "Clear all" at bottom.
 
@@ -269,12 +295,15 @@ Concrete font/size/color values for each theme are defined in `lib/export/themes
 
 Themes affect both:
 
-- Preview pane (via `prose-github` / `prose-academic` / `prose-minimal` CSS classes; styles in `globals.css`)
+- Preview pane (via `prose-github` / `prose-academic` / `prose-minimal` CSS classes added in `app/globals.css` — extending the existing handwritten `.prose` rules; **no `@tailwindcss/typography` plugin** is introduced)
 - PDF export (read from `THEMES[settings.theme]` inside `lib/export/export-pdf.ts`)
+- DOCX export (read from `THEMES[settings.theme]` inside `lib/export/export-docx.ts` — body font and heading font map to `TextRun.font`; sizes map to `TextRun.size` in half-points)
 
 ### PDF refactor (`lib/export/export-pdf.ts`)
 
-`exportHtmlToPdf` signature changes:
+Current code: `exportHtmlToPdf(html, filename)` builds a detached `<div>` from the HTML string, then `exportToPdf(element, filename)` walks DOM nodes via jsPDF primitives. **The string-to-DOM bridge and the DOM-walking renderer are preserved verbatim** — only the renderer's hard-coded constants (margins, fonts, sizes, colors) are replaced with values read from `ExportSettings` + the active theme.
+
+New signature:
 
 ```ts
 export async function exportHtmlToPdf(
@@ -283,6 +312,8 @@ export async function exportHtmlToPdf(
   settings: ExportSettings
 ): Promise<void>
 ```
+
+`exportToPdf(element, filename, settings)` keeps its `HTMLElement` input; only the inner DOM walk changes to read from `settings`/theme tokens instead of constants.
 
 Page setup:
 
@@ -301,7 +332,16 @@ If `settings.toc !== 'off'`:
 - Render after cover, before body
 - Each entry: heading text + dotted leader + page number (computed in second pass)
 
-Two-pass rendering: first pass renders body to compute heading → page map. Second pass renders cover + TOC + body.
+**Two-pass rendering** (only when `settings.toc !== 'off'`):
+
+1. **Measure pass:** instantiate a throwaway `jsPDF` document with identical page/margin/theme/cover settings and render the body to it. Walk its internal state to extract `headingId → pageNumber` (jsPDF tracks `getNumberOfPages()`; we annotate each heading via `getCurrentPageInfo()` at render time). The throwaway document is discarded.
+2. **Final pass:** instantiate the real `jsPDF`, render cover, render TOC entries using the heading→page map from pass 1, then render the body again.
+
+Determinism note: jsPDF page breaks are a pure function of (settings, theme, html). The measure pass and final pass render identical body content with identical inputs, so the page map is stable. Pasted base64 images render to known pixel sizes (we resize to fit content width); they do not vary between passes.
+
+If `settings.toc === 'off'`, single-pass rendering only — cover, then body, then optional page numbers.
+
+**TOC dotted leader:** for each entry, compute `availableWidth = contentWidth - textWidth(title) - textWidth(pageNum)`, then render `.` characters spanning that width with `pdf.text()`. Width per dot is precomputed once.
 
 If `settings.pageNumbers !== 'off'`:
 
@@ -333,7 +373,7 @@ DOCX maps:
 
 ### Toast (sonner)
 
-Install `sonner`. Mount `<Toaster richColors closeButton />` in `app/layout.tsx`.
+Install `sonner@^1.7.0` (latest minor; verified compatible with React 19 — peer-dep widened in 1.5+). Mount `<Toaster richColors closeButton />` in `app/layout.tsx` as a client component island.
 
 Toasts:
 
@@ -351,8 +391,8 @@ Fixed-height row below the editor (inside the same card):
 Words: 142   Chars: 891   ~1 min read         Ln 4, Col 12   ● Saved
 ```
 
-- Words: token-level count from CodeMirror state (split on `/\s+/`)
-- Chars: `markdown.length` excluding newlines
+- Words: token-level count from CodeMirror state (split on `/\s+/`, filter empty)
+- Chars: `markdown.length` (full string length; newlines and markdown syntax included — matches the convention users expect from text editors)
 - Read time: `Math.max(1, Math.round(words / 200))` minutes
 - Ln/Col: from CodeMirror cursor selection
 - Save state: dot color: gray (idle), amber (saving), green (saved)
@@ -406,10 +446,23 @@ No unit-test framework will be added; lib functions covered indirectly via Playw
 
 ## Risks
 
-1. **CodeMirror SSR** — strict client-only. Wrapped in `'use client'` and dynamic import if needed.
-2. **PDF two-pass cost** — for very long docs, rendering twice is slow. Mitigation: only two-pass if `settings.toc !== 'off' || settings.pageNumbers !== 'off' || settings.coverPage`. Otherwise single pass.
-3. **localStorage quota** — base64 images plus recent docs can exceed 5 MB quota. On write failure, prune oldest recent doc and retry; if still fails, drop recents entirely with a toast.
-4. **Theme drift between preview and PDF** — preview is CSS, PDF is manual jsPDF rendering. Themes share font/size tokens but the visual won't be pixel-identical; documented as expected.
+1. **CodeMirror SSR** — strict client-only. `MarkdownEditor` is loaded via `next/dynamic(() => import('@/components/editor/markdown-editor'), { ssr: false })`. The component file itself uses `'use client'`. We commit to `ssr: false` definitively — not "if needed" — because the `EditorView` constructor touches `document` at module init time.
+
+2. **CodeMirror 6 + React 19 StrictMode double-mount** — React 19 dev StrictMode invokes effects twice. The `EditorView` is created imperatively inside a `useEffect`; we MUST call `view.destroy()` in the cleanup function, or two views accumulate. The wrapper follows the canonical CM6-in-React pattern: create on mount, destroy on unmount, use `effects.dispatch()` for external state sync.
+
+3. **PDF two-pass cost** — for very long docs, rendering twice is slow. Mitigation: only two-pass if `settings.toc !== 'off'`. Page numbers and cover are single-pass (page numbers stamped after body render; cover prepended before body render with known page count = 1).
+
+4. **localStorage quota** — base64 images plus recent docs can exceed 5 MB quota. On write failure: prune oldest recent doc and retry; if still fails, drop recents entirely with an error toast. The current document write always wins over recents.
+
+5. **Tab close inside debounce window** — 500ms debounce can lose work on tab close. Mitigation: `useDocument` registers a `beforeunload` listener that calls `flushNow()` synchronously, persisting pending state before the tab unloads.
+
+6. **Theme drift between preview and PDF** — preview is CSS, PDF is manual jsPDF rendering. Themes share font/size tokens but the visual won't be pixel-identical. Documented in the dialog ("Preview is approximate; PDF output may differ slightly").
+
+7. **Keyboard shortcut conflicts** — Cmd/Ctrl+K conflicts with browser address-bar in some browsers; mitigated by `preventDefault` inside the editor only (browser shortcut works when editor isn't focused). Heading shortcuts use `Alt+1..6` to avoid the universal browser tab-switch binding on Cmd/Ctrl+1..9.
+
+8. **sonner peer-dep** — sonner 1.5+ supports React 19; pin to `^1.7.0`. If install warns about peer-dep mismatch, fail loudly in CI rather than auto-resolving.
+
+9. **`@tailwindcss/typography` is NOT installed** — the current `.prose` rules are handwritten in `globals.css`. Theme variants `.prose-github` / `.prose-academic` / `.prose-minimal` are added as additional CSS classes extending the existing manual rules. No plugin is added; this is intentional to keep bundle size minimal.
 
 ## Out of scope (deferred)
 
