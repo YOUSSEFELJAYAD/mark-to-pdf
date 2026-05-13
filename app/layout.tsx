@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "Markdown to PDF Converter - Free Online Tool",
     template: "%s | Markdown to PDF Converter",
   },
-  description: "Free online Markdown to PDF and DOCX converter. Convert your Markdown files instantly with live preview, code highlighting, and professional formatting. No signup required.",
+  description: "Free Markdown to PDF and DOCX converter. Convert instantly with live preview, code highlighting, and professional formatting. No signup, no upload.",
   keywords: [
     "markdown to pdf",
     "markdown converter",
