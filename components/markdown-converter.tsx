@@ -43,8 +43,6 @@ import {
 } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { markdownToHtml } from "@/lib/markdown-parser"
-import { exportHtmlToPdf } from "@/lib/export/export-pdf"
-import { exportToDocx } from "@/lib/export/export-docx"
 import { MarkdownEditor, type EditorHandle } from "@/components/editor/markdown-editor"
 import { EditorToolbar } from "@/components/editor/editor-toolbar"
 import { EditorStatusbar } from "@/components/editor/editor-statusbar"
@@ -231,8 +229,10 @@ export function MarkdownConverter({ initialExample = null }: MarkdownConverterPr
         format === "pdf" ? `${exportFilename}.pdf` : `${exportFilename}.docx`
 
       if (format === "pdf") {
+        const { exportHtmlToPdf } = await import("@/lib/export/export-pdf")
         await exportHtmlToPdf(html, fullName, exportSettings)
       } else {
+        const { exportToDocx } = await import("@/lib/export/export-docx")
         await exportToDocx(markdown, fullName, exportSettings)
       }
       toast.success(`Downloaded ${fullName}`)
