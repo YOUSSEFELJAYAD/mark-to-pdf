@@ -89,30 +89,6 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-// JSON-LD structured data for SEO
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "Markdown to PDF Converter",
-  description: "Free online Markdown to PDF and DOCX converter with live preview and professional formatting.",
-  url: siteUrl,
-  applicationCategory: "UtilitiesApplication",
-  operatingSystem: "Any",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "Convert Markdown to PDF",
-    "Convert Markdown to DOCX",
-    "Live preview",
-    "Code syntax highlighting",
-    "Custom filename",
-    "No signup required",
-  ],
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -141,12 +117,6 @@ export default function RootLayout({
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-
-        {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
