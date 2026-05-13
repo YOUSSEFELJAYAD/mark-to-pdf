@@ -3,11 +3,13 @@ import { AdBanner } from "@/components/ads/ad-banner"
 import { AdSidebar } from "@/components/ads/ad-sidebar"
 import { SiteFooter } from "@/components/seo/site-footer"
 import { SoftwareAppJsonLd } from "@/components/structured-data/base-jsonld"
+import { FaqJsonLd, FaqVisible } from "@/components/structured-data/faq-jsonld"
 
 export default function Page() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <SoftwareAppJsonLd />
+      <FaqJsonLd />
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-6">
@@ -83,6 +85,8 @@ export default function Page() {
           </div>
         </div>
       </section>
+
+      <FaqVisible />
 
       {/* Footer */}
       <SiteFooter />
