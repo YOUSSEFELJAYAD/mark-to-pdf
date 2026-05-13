@@ -20,21 +20,17 @@ export default async function Page({
       <SoftwareAppJsonLd />
       <FaqJsonLd />
       <HowToJsonLd />
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">
-                Markdown to PDF Converter
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                Free online tool to convert Markdown to PDF or DOCX
-              </p>
-            </div>
-          </div>
+      {/* Hero */}
+      <section className="border-b">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <h1 data-testid="page-h1" className="text-2xl md:text-3xl font-bold tracking-tight">
+            Markdown to PDF Converter
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
+            Free online tool to convert Markdown to PDF or DOCX
+          </p>
         </div>
-      </header>
+      </section>
 
       {/* Top Ad Banner */}
       <div className="container mx-auto px-4 pt-4">

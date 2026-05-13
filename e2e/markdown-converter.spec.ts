@@ -7,7 +7,7 @@ test.describe('Markdown Converter', () => {
 
   test.describe('Page Load', () => {
     test('should display the main heading', async ({ page }) => {
-      await expect(page.locator('header h1')).toContainText('Markdown to PDF Converter')
+      await expect(page.locator('[data-testid="page-h1"]')).toContainText('Markdown to PDF Converter')
     })
 
     test('should display editor and preview cards', async ({ page, isMobile }) => {
@@ -274,7 +274,7 @@ test.describe('Markdown Converter', () => {
 
   test.describe('Accessibility', () => {
     test('should have proper heading hierarchy', async ({ page }) => {
-      const h1 = page.locator('header h1')
+      const h1 = page.locator('[data-testid="page-h1"]')
       await expect(h1).toHaveCount(1)
       await expect(h1).toContainText('Markdown to PDF Converter')
     })
