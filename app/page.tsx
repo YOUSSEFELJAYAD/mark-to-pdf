@@ -11,7 +11,7 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">
-                Markdown Converter
+                Markdown to PDF Converter
               </h1>
               <p className="text-muted-foreground mt-1 text-sm md:text-base">
                 Free online tool to convert Markdown to PDF or DOCX
