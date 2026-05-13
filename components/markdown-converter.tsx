@@ -3,6 +3,7 @@
 import * as React from "react"
 import { FileText, Download, Eye, Code, FileIcon, Loader2 } from "lucide-react"
 import { Upload, History, Trash2, FileText as FileTextIcon } from "lucide-react"
+import { Settings as SettingsIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
@@ -48,6 +49,8 @@ import { EditorToolbar } from "@/components/editor/editor-toolbar"
 import { EditorStatusbar } from "@/components/editor/editor-statusbar"
 import { MarkdownPreview } from "@/components/preview/markdown-preview"
 import { useDocument } from "@/hooks/use-document"
+import { useExportSettings } from "@/hooks/use-export-settings"
+import { ExportSettingsDialog } from "@/components/export/export-settings-dialog"
 
 type ExportFormat = "pdf" | "docx"
 type ViewMode = "split" | "edit" | "preview"
@@ -71,6 +74,8 @@ export function MarkdownConverter() {
   const previewRef = React.useRef<HTMLDivElement>(null)
 
   const { recent, push: pushRecent, remove: removeRecent, clear: clearRecent } = useRecentDocs()
+  const { settings: exportSettings, update: updateSettings, reset: resetSettings } = useExportSettings()
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
   const [dropActive, setDropActive] = React.useState(false)
   const [pendingFile, setPendingFile] = React.useState<{ name: string; text: string } | null>(null)
   const [pendingRecent, setPendingRecent] = React.useState<RecentDoc | null>(null)
@@ -205,9 +210,9 @@ export function MarkdownConverter() {
     try {
       const exportFilename = filename.trim() || "document"
       if (format === "pdf") {
-        await exportHtmlToPdf(html, `${exportFilename}.pdf`)
+        await exportHtmlToPdf(html, `${exportFilename}.pdf`, exportSettings)
       } else {
-        await exportToDocx(markdown, `${exportFilename}.docx`)
+        await exportToDocx(markdown, `${exportFilename}.docx`, exportSettings)
       }
       setExportStatus("success")
       setTimeout(() => setExportStatus("idle"), 3000)
@@ -428,6 +433,20 @@ export function MarkdownConverter() {
                   </DropdownMenu>
                 </>
               }
+              rightSlot={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="size-8 p-0"
+                  aria-label="Export settings"
+                  title="Export settings"
+                  data-testid="tb-settings"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <SettingsIcon className="size-4" />
+                </Button>
+              }
             />
             <div className="flex-1 overflow-hidden">
               <MarkdownEditor
@@ -454,7 +473,7 @@ export function MarkdownConverter() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto pb-4">
-              <MarkdownPreview html={html} innerRef={previewRef} />
+              <MarkdownPreview html={html} innerRef={previewRef} theme={exportSettings.theme} />
             </CardContent>
           </Card>
         )}
@@ -493,6 +512,14 @@ export function MarkdownConverter() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExportSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={exportSettings}
+        onChange={updateSettings}
+        onReset={resetSettings}
+      />
     </div>
   )
 }
