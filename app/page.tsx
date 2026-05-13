@@ -4,12 +4,14 @@ import { AdSidebar } from "@/components/ads/ad-sidebar"
 import { SiteFooter } from "@/components/seo/site-footer"
 import { SoftwareAppJsonLd } from "@/components/structured-data/base-jsonld"
 import { FaqJsonLd, FaqVisible } from "@/components/structured-data/faq-jsonld"
+import { HowToJsonLd } from "@/components/structured-data/howto-jsonld"
 
 export default function Page() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <SoftwareAppJsonLd />
       <FaqJsonLd />
+      <HowToJsonLd />
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-6">
