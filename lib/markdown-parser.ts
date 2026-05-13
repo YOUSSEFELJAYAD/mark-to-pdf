@@ -1,6 +1,6 @@
-import { marked, type Token } from 'marked'
+import { marked, type Token } from "marked"
+import DOMPurify from "dompurify"
 
-// Configure marked for safe parsing
 marked.use({
   gfm: true,
   breaks: true,
@@ -11,12 +11,20 @@ export interface ParsedMarkdown {
   tokens: Token[]
 }
 
+function sanitize(html: string): string {
+  if (typeof window === "undefined") return html
+  return DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true },
+    ADD_ATTR: ["target", "rel"],
+  })
+}
+
 export function parseMarkdown(markdown: string): ParsedMarkdown {
   const tokens = marked.lexer(markdown)
-  const html = marked.parser(tokens)
+  const html = sanitize(marked.parser(tokens))
   return { html, tokens }
 }
 
 export function markdownToHtml(markdown: string): string {
-  return marked.parse(markdown) as string
+  return sanitize(marked.parse(markdown) as string)
 }
