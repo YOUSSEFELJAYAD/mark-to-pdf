@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import dynamic from "next/dynamic"
 import { toast } from "sonner"
 import { FileText, Download, Eye, Code, FileIcon, Loader2 } from "lucide-react"
 import { Upload, History, Trash2, FileText as FileTextIcon } from "lucide-react"
@@ -43,13 +44,27 @@ import {
 } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 import { markdownToHtml } from "@/lib/markdown-parser"
-import { MarkdownEditor, type EditorHandle } from "@/components/editor/markdown-editor"
+import type { EditorHandle } from "@/components/editor/markdown-editor"
 import { EditorToolbar } from "@/components/editor/editor-toolbar"
 import { EditorStatusbar } from "@/components/editor/editor-statusbar"
 import { MarkdownPreview } from "@/components/preview/markdown-preview"
 import { useDocument, SAMPLE_MARKDOWN } from "@/hooks/use-document"
 import { useExportSettings } from "@/hooks/use-export-settings"
 import { ExportSettingsDialog } from "@/components/export/export-settings-dialog"
+
+export type { EditorHandle }
+
+const MarkdownEditor = dynamic(
+  () => import("@/components/editor/markdown-editor").then((m) => m.MarkdownEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Loading editor…
+      </div>
+    ),
+  },
+)
 
 type ExportFormat = "pdf" | "docx"
 type ViewMode = "split" | "edit" | "preview"
